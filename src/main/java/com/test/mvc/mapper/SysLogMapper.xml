@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.test.mvc.mapper.SysLogMapper">
+    <insert id="addSysLog" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO `system_log`(operator,op_time,op_area,op_controller,op_action) VALUES (
+        #{operator},#{opTime},#{opArea},#{opController},#{opAction})
+    </insert>
+</mapper>

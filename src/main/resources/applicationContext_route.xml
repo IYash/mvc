@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	   xmlns:tx="http://www.springframework.org/schema/tx" xmlns:aop="http://www.springframework.org/schema/aop"
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx.xsd">
+	<import resource="classpath:mvc-context.xml"/>
+
+	<context:annotation-config/>
+	<context:component-scan base-package="com.test.mvc"/>
+	<!--多数据源的测试-->
+	<bean id="defaultDataSource" class="com.alibaba.druid.pool.DruidDataSource">
+		<property name="driverClassName" value="${db.driver}"/>
+		<property name="url" value="${db.url}"/>
+		<property name="username" value="${db.username}"/>
+		<property name="password" value="${db.password}"/>
+	</bean>
+	<bean id="otherDataSource" class="com.alibaba.druid.pool.DruidDataSource">
+		<property name="driverClassName" value="${db.driver_other}"/>
+		<property name="url" value="${db.url_other}"/>
+		<property name="username" value="${db.username_other}"/>
+		<property name="password" value="${db.password_other}"/>
+	</bean>
+	<bean id="dataSource" class="com.test.mvc.datasourceutil.DynamicDataSource">
+		<property name="targetDataSources">
+			<map key-type="java.lang.String">
+				<entry key="defaultDataSource" value-ref="defaultDataSource"/>
+				<entry key="otherDataSource" value-ref="otherDataSource"/>
+			</map>
+		</property>
+		<property name="defaultTargetDataSource" ref="defaultDataSource"/>
+	</bean>
+
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource"/>
+		<property name="configLocation" value="classpath:mybatis-config.xml"/>
+		<property name="typeAliasesPackage" value="com.test.mvc.domain"/>
+		<property name="mapperLocations" value="classpath:com/test/mvc/mapper/*Mapper.xml"/>
+	</bean>
+	<!--配置Mapper  -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.test.mvc.mapper"/>
+	</bean>
+	<!--事务配置，一次会话过程中不允许切换数据源 -->
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+
+	<!--AOP注解方式开启-->
+	<aop:aspectj-autoproxy proxy-target-class="true"/>
+
+	<!--做一个数据源切换的AOP配置-->
+	<!--<aop:config>
+		<aop:aspect id="dataSourceSwitchService" ref="dataSourceSwitch">
+			<aop:pointcut expression="execution(* com.test.mvc.service.IBlogService.*(..))" id="pcut" />
+			<aop:before method="doSwitch" pointcut-ref="pcut" />
+		</aop:aspect>
+	</aop:config>
+	<bean id="dataSourceSwitch" class = "com.test.mvc.datasourceutil.DataSourceSwitch"/>-->
+	<!--①上述配置不生效，由于执行的时机已经在确定数据源之后了;②不配置事务居然又生效了....-->
+
+	<!--面向接口（对象）的，注解也配置接口（对象）上-->
+	<bean class="org.springframework.aop.framework.autoproxy.BeanNameAutoProxyCreator">
+		<property name="beanNames">
+			<list>
+				<value>*Service</value>
+			</list>
+		</property>
+		<property name="interceptorNames">
+			<list>
+				<value>txInterceptor</value>
+			</list>
+		</property>
+	</bean>
+
+	<tx:annotation-driven transaction-manager="transactionManager"/>
+	<bean  id="txInterceptor" class="com.test.mvc.datasourceutil.DataSourceSwitchTransactionInterceptor">
+		<property name="transactionManager">
+			<ref bean="transactionManager"/>
+		</property>
+		<property name="transactionAttributes"><!--if there are no transactional methods, then don't use a transaction aspect-->
+			<props>
+				<prop key="insert*">PROPAGATION_REQUIRED,-Exception</prop>
+				<prop key="save*">PROPAGATION_REQUIRED,-Exception</prop>
+				<prop key="delete*">PROPAGATION_REQUIRED,-Exception</prop>
+				<prop key="update*">PROPAGATION_REQUIRED,-Exception</prop>
+				<prop key="add*">PROPAGATION_REQUIRED,-Exception</prop>
+				<prop key="*">PROPAGATION_REQUIRED,readOnly</prop>
+			</props>
+		</property>
+
+	</bean>
+
+	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="locations">
+			<list>
+				<value>classpath:druid.properties</value>
+			</list>
+		</property>
+	</bean>
+
+</beans>

@@ -1,0 +1,8 @@
+applicationContext_route.xml
+使用这个配置文件的时候需要保证会话是在一个dataSource上的，要关闭@LogSys注解，将@DataSourceType注解在接口上
+application.xml正常使用即可
+进行多数据源切换时，可以通过aop的方式确认切换的时机，但要保证是在一个datasource上
+
+在当前系统中同时使用ftl,jsp视图解析器的常规配置方式：
+①自定义一个可进行分发的视图解析器，根据视图的名称进行路由
+②根据视图名称找到对应的url，渲染后将对应路径下的model返回

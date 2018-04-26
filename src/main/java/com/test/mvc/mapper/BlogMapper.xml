@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.test.mvc.mapper.BlogMapper">
+    <insert id="addBlog" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO `blog`(message,create_time) VALUES (#{message},#{createTime})
+    </insert>
+    <insert id="blogInsertBatch" useGeneratedKeys="true">
+        INSERT INTO `blog`(message,create_time) VALUES
+        <foreach collection="blogList" item="blog" index="blog" separator=",">
+            (#{blog.message},#{blog.createTime})
+        </foreach>
+    </insert>
+    <update id="blogUpdateBatch">
+        update `blog` set message =
+        <foreach collection="blogList" item="blog" separator=" " open="case ID" close="end">
+            when #{blog.id} then #{blog.message}
+        </foreach>
+        where id IN
+        <foreach collection="blogList" item="blog" open="(" separator="," close=")">
+            #{blog.id}
+        </foreach>
+    </update>
+    <select id="blogSelectBatch" resultType="Blog">
+        select * from `blog` where id > 0 limit 0,#{size}
+    </select>
+    <delete id="delistByIds">
+        DELETE FROM `blog` WHERE id IN <foreach collection="ids" item="id" open="(" separator="," close=")">
+        #{id}
+    </foreach>
+    </delete>
+    <delete id="delistByArrayIds">
+        DELETE FROM `blog` WHERE id IN <foreach collection="ids" item="id" open="(" separator="," close=")">
+        #{id}
+    </foreach>
+    </delete>
+
+</mapper>
