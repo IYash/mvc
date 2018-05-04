@@ -14,6 +14,8 @@ import org.springframework.beans.factory.InitializingBean;
  * ⑦执行afterPropertiesSet,init-method
  * ⑧执行postProcessAfterInitialization
  * ⑨finished creating instance of 'postProcessorBean'
+ * 循环依赖的管理方式：
+ * https://blog.csdn.net/u010853261/article/details/77940767
  */
 public class PostProcessorBean implements InitializingBean {
     private String username;
