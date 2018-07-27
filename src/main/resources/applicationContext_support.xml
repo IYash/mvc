@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xmlns:config="http://test.com/util/schema/db"
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+      	http://test.com/util/schema/db
+      	http://test.com/util/schema/db.xsd
+      ">
+
+	<config:db id="dbConfig" url="localhost:3306/test" username="root"
+			   password="123456" />
+</beans>
