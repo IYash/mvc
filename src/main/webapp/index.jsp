@@ -45,6 +45,18 @@
                 if (fatherid != null) a = fatherid;
                 $.each(obj, function(index, childobj) {
                     $("#" + a).append('<ul id="' + childobj.id + '"><input type="checkbox" value=""					index="' + childobj.id + '">' + childobj.name + '</ul>');
+//                    if (fatherid != null){
+//                        if (index == 0){
+//                            $("#" + a).append('<ul id="' + childobj.id + '"><input type="checkbox" style = "margin-left: 15px;" value="" index="' + childobj.id + '"><label style="width:150px;display: inline-block">' + childobj.name + '</label></ul>');
+//                            fatherid = childobj.id;
+//                        }else{
+//                            $("#"+fatherid).append('<input type="checkbox" style = "margin-left: 15px;" value="" index="' + childobj.id + '"><label style="width:150px;display: inline-block">'+ childobj.name+'</label>');
+//                        }
+//                        if ((index+1)%3 == 0)
+//                            $("#"+fatherid).append('<br/>');
+//                    }else {
+//                        $("#" + a).append('<ul id="' + childobj.id + '"><input type="checkbox" style = "margin-left: 15px;" value="" index="' + childobj.id + '"><label style="width:150px;display: inline-block">' + childobj.name + '</label></ul>');
+//                    }修改嵌套逻辑
                     if (childobj.child != undefined) {
                         digui(childobj.child, childobj.id);
                     }
