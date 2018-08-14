@@ -2,7 +2,8 @@
 final String context = request.getContextPath();
 final String source = context;
 
-
+final String css = source + "/css";
+final String myStyle = css +"/my.css";
 final String scripts = source+"/jscript";
 
 
@@ -18,4 +19,5 @@ pageContext.setAttribute("jquery_js",jquery_js);
 pageContext.setAttribute("login_js",login_js);
 pageContext.setAttribute("ajax_js",ajax_js);
     pageContext.setAttribute("datePicker_js",datePicker_js);
+    pageContext.setAttribute("myStyle",myStyle);
 %>

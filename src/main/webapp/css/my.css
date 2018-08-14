@@ -1,0 +1,37 @@
+.field_choose_con dd.active .checkbox_icon {
+    background-position: -31px -75px;
+}
+.checkbox_icon {
+    width: 13px;
+    height: 15px;
+    background-position: -31px -32px;
+    margin-right: 5px;
+}
+.mylvmama_icon {
+    background: url(http://pic.lvmama.com/img/fx/fx_mylvmama_icon.png) no-repeat;
+    display: inline-block;
+    vertical-align: middle;
+}
+.field_choose_con dt{
+    /*float: left;*/
+    font-size: 12px;
+    height: 23px;
+    line-height: 23px;
+    margin-bottom: 10px;
+}
+.field_choose_con dt dd{
+    /*float: left;*/
+    font-size: 12px;
+    height: 23px;
+    line-height: 23px;
+    margin-bottom: 10px;
+}
+.field_choose_con dt dd{
+    /*float: left;*/
+    font-size: 12px;
+    height: 23px;
+    line-height: 23px;
+    margin-bottom: 10px;
+}
+.clearfix {
+}
