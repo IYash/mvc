@@ -17,9 +17,8 @@
         console.log("每隔一秒我就会显示一次");
     }
     var sh;
-    sh=setInterval(show,1000);
+    timer=setInterval(show,1000);
 
-    clearInterval(sh);
 </script>
 </body>
 </html>
