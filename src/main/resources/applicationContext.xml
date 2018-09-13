@@ -66,6 +66,6 @@
 			</list>
 		</property>
 	</bean>
-
+	<bean id="monitor" class="com.test.mvc.domain.Monitor"></bean>
 
 </beans>

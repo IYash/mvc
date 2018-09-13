@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
  * 通过自定义FactoryBean实现自定义bean的注入
  * 通过实现InitializingBean初始化monitor
  */
-@Component
+//@Component
 public class MonitorFactoryBean implements FactoryBean<Monitor>,InitializingBean,DisposableBean {
 
     private Monitor monitor;

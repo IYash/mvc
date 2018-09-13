@@ -16,6 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpRequest;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
@@ -58,6 +60,7 @@ public class LoginController extends BaseController{
         return "index";
     }
     @RequestMapping("/page/login.do")
+
     @SysLog(operateArea = {"controller","loginController","login"})
     public String login(Model model, String username, String password, HttpServletRequest request){
 

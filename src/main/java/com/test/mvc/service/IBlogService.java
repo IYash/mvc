@@ -3,6 +3,8 @@ package com.test.mvc.service;
 import com.test.mvc.datasourceutil.DataSourceType;
 import com.test.mvc.domain.Blog;
 import com.test.mvc.domain.Blog;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +15,7 @@ import java.util.List;
 public interface IBlogService {
 
     @DataSourceType(DataSourceType.Type.OTHER)
+    @Transactional(propagation = Propagation.NEVER)
     void addBlog(Blog blog);
 
     void delistByIds(ArrayList<Integer> ids);
