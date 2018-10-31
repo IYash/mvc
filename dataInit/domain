@@ -1,0 +1,53 @@
+什么是领域模型？
+领域模型是关于某个特定业务领域的软件模型。通常，领域模型通过对象模型来实现，这些对象
+同时包含了数据和行为，并且表达了准确的业务含义。
+
+常见的问题：
+接口业务意图不明确，实现本身增加了潜在的复杂性，领域对象只是一个数据持有器
+
+"注射流感疫苗"的最佳模型：
+"谁管呢？写代码就行了。":patient.setShotType(ShotTypes.TYPE_FLU);patient.setDose(dose);patient.setNurse(nurse);
+"我们给病人注射流感疫苗。":patient.giveFluShot();
+"护士给病人注射标准剂量的流感疫苗。":
+Vaccine vaccine = vaccines.standardAdultFluDose();
+nurse.administerFluVaccine(patient,vaccine);这才是我们想要的。
+
+
+一个简单的案例：
+需求：允许将每一个待订项提交到冲刺中。只有在一个待定项位于发布计划(Release)中时才能进行
+提交。如果一个待定项已经提交到了另外一个冲刺中，那么需要先将其回收。提交完成时，通知相关
+客户方。
+public class BacklogItem extends Entity{
+    private SprintId sprintId;
+    private BacklogItemStatusType status;
+    ...
+    public void commitTo(Sprint aSprint){
+        if(!this.isScheduledForRelease()){
+            throw new IllegalStateException("must be scheduled for release to commit to sprint");
+        }
+        if(!this.isCommittedToSprint()){
+            if(!aSprint.sprintId().equals(this.sprintId())){
+                this.uncommitFromSprint();
+            }
+        }
+        this.elevateStatuWith(BacklogItemStatus.COMMITTED);
+        this.setSprintId(aSprint.sprintId());
+        DomainEventPublisher.instance().publish(new BacklogItemCommitted(this.tenant(),this.backlogItemId(),this.sprintId()));
+    }
+    ...
+}
+此时的客户端代码如下：
+backlogItem.commitTo(sprint);
+
+
+SaaSOvation,它的产品对DDD的使用
+CollabOvation这是一套企业协作软件，并且加入了社交网络的功能。该产品的功能包括论坛，共享日历，博客，即时消息，
+留言板，文档管理，通知和提醒，活动跟踪和RSS等。
+ProjectOvation主要用于敏捷项目的管理，使用Scrum作为项目管理方式，并且采用增量式的管理框架。该产品采用传统的Scrum
+项目管理模型，包括产品，产品负责人，团队，待定项，计划发布和冲刺。
+
+
+
+
+从广义上讲，领域即是一个组织所做的事情以及其中所包含的一切。
+
