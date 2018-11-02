@@ -74,3 +74,72 @@ public class Product extends Entity{
     private Discussion discussion;
     ...
 }
+
+命令处理器通常只完成有限的功能。如果处理器拥有创建功能，那么它会创建一个新的聚合实例，然后
+将该实例添加到资源库中。通常地，命令处理器将从源库中获取聚合实例，再调用该实例的行为方法：
+@Transaction
+public void commitBacklogItemToSprint(String aTenantId,String aBacklogItemId,String aSprintId){
+    TenantId tenantId = new TenantId(aTenantId);
+    BacklogItem backlogItem = backlogItemRepository.backlogItemOfId(tenantId,new BacklogItemId(aBacklogItemId));
+    Sprint sprint = sprintRepository.sprintOfId(tenantId,new SprintId(aSprintId));
+    backlogItem.commitTo(sprint);
+}
+命令模型（写模型）执行业务行为
+命令模型上每个方法在执行完成时都将发布领域事件。以BacklogItem为例：
+public class BacklogItem extends ConcurrencySafeEntity{
+    ...
+    public void commitTo(Sprint sprint){
+        ...
+        DomainEventPublisher.instance().publish(new BacklogItemCommitted(this.tenant(),this.backlogItemId(),this.sprintID()));
+    }
+    ...
+}
+
+
+事件驱动架构
+事件驱动架构是一种用于处理事件的生成、发现和处理等任务的软件框架
+基于消息的系统通常呈现出一种管道和过滤器风格。cat phone_numbers.txt | grep '303' | wc -l
+如何通过创建消息发送方和接收方这样的组件来完成上例中电话号码过滤功能？
+1.PhoneNumbersPublisher读取数据，发送AllPhoneNumbersListed事件
+2.PhoneNumberFinder接收，发送PhoneNumberMatched事件
+3.MatchPhoneNumberCounter接收，发送MatchedPhoneNumbersCounted事件
+4.PhoneNumberExecutive接收，记录日志
+
+分布式的并行处理模式--长时处理过程（Long-Running Process）
+设计长时处理过程的不同方法
+1.将处理过程设计成一个组合任务，使用一个执行组件对任务进行跟踪，并对各个步骤和任务完成情况精心持久化。
+2.将处理过程设计成一组聚合，这些聚合在一些列的活动中相互协作。一个或多个聚合实例充当执行组件并维护整个处理过程的状态。
+3.设计一个无状态的处理过程，其中每一个消息处理组件都将对所接收到的消息进行扩充--即向其中计入额外的数据信息--然后再将消息发送到下一个处理组件
+此时并行处理长时处理过程存在一个问题，无法知道所接收到的领域事件是否来自统一并行处理过程？
+在实际领域中，一个长时处理过程的执行器将创建一个新的类似聚合的状态对象来跟踪事前的完成情况。该状态
+对象在处理过程开始时创建，它将与所有的领域事件共享一个唯一标识。同时，将处理过程开始时的时间戳保存在该状态对象中也是有好处的。
+
+接下来看看一个实现了长时处理过程的函数是如何处理先前的电话号码例子的。这个处理过程将在复制缓存中并行执行，使用的是GemFire函数：
+public class PhoneNumberCountSaga extends FunctionAdapter{
+    @Override
+    public void execute(FunctionContext context){
+        Cache cache = CacheFactory.getAnyInstance();
+        QueryService queryService = cache.getQueryService();
+        String phoneNumberFilterQuery = (String)context.getArguments();
+        ...
+        //伪代码
+        //-执行函数以获取MatchedPhoneNumbersCounted
+        //-通过调用aggregator.sendResult(MatchedPhoneNumbersCounted)将答案发给聚合器
+        //-执行函数以获取AllPhoneNumbersCounted
+        //-通过调用aggregator.sendResult(AllPhoneNumbersCounted)将答案发给聚合器
+        //-聚合器从每个分布式的函数返回中自动地收集答案，然后聚合
+        //之后的单一答案发送给客户端
+    }
+}
+客户端可以通过以下方式来并行地执行一个长时处理过程:
+PhoneNumberCountProcess phoneNumberCountProcess = new PhoneNumberCountProcess();
+String phoneNumberFilterQuery = "select phoneNumber from phoneNumberRegion pnr where pnr.areaCode = '303'";
+Execution execution = FunctionService.onRegion(phoneNumberRegion).withFilter(0).withArgs(phoneNumberFilterQuery).withCollection(new PhoneNumberCountResultCollector());
+PhoneNumberCountResultCollector resultsCollector = execution.execute(phoneNumberCountProcess);
+List allPhoneNumberCountResults = (List)resultsCollector.getResult();
+
+
+
+
+
+
