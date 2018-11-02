@@ -48,6 +48,29 @@ ProjectOvation主要用于敏捷项目的管理，使用Scrum作为项目管理�
 
 
 
-
+领域，子域，限界上下文
 从广义上讲，领域即是一个组织所做的事情以及其中所包含的一切。
 
+限界上下文是一个显示的边界，领域模型便存在于这个边界之内。领域模型是把通用语言表达成软件模型。
+限界上下文主要是一个语义上的边界
+
+领域中还同时存在问题空间和解决方案空间。在问题空间中，我们思考的是业务面临的挑战，而在
+解决方案空间中，我们思考如何实现软件以解决这些业务挑战。
+
+
+上下文映射图主要帮助我们从解决方案空间的角度看待问题。
+
+处理资源不可用的一个好办法便是将器显现出来。考虑一下由标准类型实现的状态模式。此时的状态是一个值对象：
+public enum DiscussionAvailability{
+    ADD_ON_NOT_ENABLED,NOT_REQUESTED,REQUESTED,READY;
+}
+public final class Discussion implements Serializable{
+    private DiscussionAvailability availability;
+    private DiscussionDescriptor descriptor;
+    ...
+}
+public class Product extends Entity{
+    ...
+    private Discussion discussion;
+    ...
+}
