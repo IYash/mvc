@@ -138,7 +138,8 @@ Execution execution = FunctionService.onRegion(phoneNumberRegion).withFilter(0).
 PhoneNumberCountResultCollector resultsCollector = execution.execute(phoneNumberCountProcess);
 List allPhoneNumberCountResults = (List)resultsCollector.getResult();
 
-
+为什么使用实体
+当需要考虑一个对象的个性特征，或者需要区分不同的对象时，引入实体这个领域概念。
 
 
 
