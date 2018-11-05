@@ -141,6 +141,60 @@ List allPhoneNumberCountResults = (List)resultsCollector.getResult();
 为什么使用实体
 当需要考虑一个对象的个性特征，或者需要区分不同的对象时，引入实体这个领域概念。
 
+验证类可以实现规范模式或策略模式。当发现非法状态时，验证类将通知客户方或者记录下验证结果以便后用。
+验证过程应该搜集到所有的验证结果，而不是在一开始遇到非法状态时就抛出异常。
+public abstract class Validator{
+    private ValidationNotificationHandler notificationHandler;
+    ...
+    public Validator(ValidationNotificationHandler aHandler){
+        super();
+        this.setNotificationHandler(aHandler);
+    }
+    public abstract void validate();
+
+    protected ValidationNotificationHandler notificationHandler(){
+        return this.notificationHandler;
+    }
+    private void setNotificationHandler(ValidationNotificationHandler aHandler){
+        this.notificationHandler = aHandler;
+    }
+}
+
+public class WarbleValidator extends Validator{
+    private Warble warble;
+    public Validator(Warble aWarble,ValidationNotificationHandler aHandler){
+        super(aHandler);
+        this.setWarble(aWarble);
+    }
+    ...
+    public void validate(){
+        if(this.hasWarpedWarbleCondition(this.warble())){
+            this.notificationHandler().handlerError("The warble is warped.");
+        }
+        if(this.hasWackyWarbleState(this.warble())){
+            this.notificationHandler().handlerError("The warble has a wacky state");
+        }
+        ...
+    }
+}
+class WarbleValidator extends Validator{
+    ...
+    public void validate(){
+        if(this.hasWarpedWarbleCondition(this.warble())){
+            this.notificationHandler().handleWarpedWarble();
+        }
+        if(this.hasWackyWarbleState(this.warble())){
+            this.notificationHandler().handleWackyWarbleState();
+        }
+    }
+    ...
+}
+跟踪变化
+根据实体的定义，只需要跟踪哪些持续改变的状态。然而，有时领域专家可能会关心发生在模型中的一些重要
+事件，此时便应该对实体的一些特殊变化进行跟踪了。
+跟踪变化最实用的方法是领域事件和事件存储。我们为领域专家所关心的素有状态改变都创建单独的事件类型，
+事件的名字和属性表名发生了什么样的事件。当命令操作执行完后，系统发出这些领域事件。事件的订阅方可以
+接收发生在模型上的所有事件。在接收到事件后，订阅方将事件保存在事件存储中。
 
 
 
