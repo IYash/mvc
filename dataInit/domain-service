@@ -30,4 +30,79 @@ public interface AuthenticationService{
     public UserDescriptor authenticate(TenantId aTenantId,String aUsername,String aPassword);
 }
 
+领域事件
+使用领域事件来捕获发生在领域中的一些事情。
+当领域事件叨叨目的地之后--无论是本地系统还是外部系统--我们通常都将领域事件用于维护事件的一致性。
+
+命令方法：BacklogItem#commitTo(Sprint aSprint)
+事件输出：BacklogItemCommitted(描述先前发生的事情)
+
+public class BacklogItemCommitted implements DomainEvent{
+    private Date occurredOn;
+    private BacklogItemId backlogItemId;//事件的发起方
+    private SprintId committedToSprintId;//事件的参与方
+    private TenantId tenantId;
+    ...
+}
+一种简单高效的发布领域事件的方法标识使用观察者模式，这种方法可以在领域模型和外部组件之间进行解耦。
+发送方
+public class DomainEventPublisher{
+    private static fina ThreadLocal<List> subscribers = new ThreadLocal<List>();
+
+    private static final ThreadLocal<Boolean> publishing = new ThreadLocal<Boolean>(){
+        protected Boolean initialValue(){
+            return Boolean.FALSE;
+        }
+    };
+    public static DomainEventPublisher instance(){
+        return new DomainEventPublisher();
+    }
+    public DomainEventPublisher(){
+        super();
+    }
+
+    public <T> void publish(final T aDomainEvent){
+        if(publishing.get()){
+            return ;
+        }
+        try{
+            publishing.set(Boolean.TRUE);
+            List<DomainEventSubscriber<T>> registeredSubscribers = subscribers.get();
+            if(registeredSubscribers != null){
+                Class<?> eventType = aDomainEvent.getClass();
+                for(DomainEventSubscriber<T> subscriber:registeredSubscribers){
+                    Class<?> subscribedTo = subscriber.subscribedToEventType();
+                    if(subscribedTo == eventType || subscribeTo == DomainEvent.class){
+                        subscriber.handleEvent(aDomainEvent);
+                    }
+                }
+            }
+        }finally{
+            publishing.set(Boolean.FALSE);
+        }
+    }
+    public DomainEventPublisher reset(){
+        if(!publishing.get()){
+            subscribers.set(null);
+        }
+        return this;
+    }
+    public <T> void subscribe(DomainEventSubscriber<T> aSubscriber){
+        if(publishing.get()){
+            return ;
+        }
+        List<DomainEventSubscriber<T>> registeredSubscribers = subscribers.get();
+        if(registeredSubscribers == null){
+            registeredSubscribers = new ArrayList<DomainEventSubscriber<T>>();
+            subscribers.set(registeredSubscribers);
+        }
+        registeredSubscribers.add(aSubscriber);
+    }
+}
+
+自治服务和系统
+通过使用领域事件，我们可以将任务企业系统设计成自治服务和系统。这里的自治服务表示一个
+设计良好的业务服务，可以将其看成一个系统或者应用程序。
+在与远程系统交互时，客户方可以不用主动地发起请求调用，而是可以通过异步的消息来达到更高层次的
+独立性--自治性。
 
