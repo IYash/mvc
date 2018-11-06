@@ -1,0 +1,33 @@
+领域服务
+领域中的服务标识一个无状态的操作，它用于实现特定于某个领域的服务。
+应用服务是不会处理业务逻辑，领域服务却恰恰是处理业务逻辑的。或者说应用服务是领域服务的客户方。
+领域服务到底是什么呢？
+当领域中的某个操作过程或转换过程不是实体或值对象的职责时，该操作应该放在一个单独的接口中，即
+领域服务（保证它是无状态的），可以使用领域服务的场景：
+1.执行一个显著的业务操作过程
+2.将领域对象进行转换
+3.以多个领域对象作为输入进行计算，结果产生一个值对象
+
+如下是一个建立领域服务的例子。
+系统必须对User进行认证，并且只有当Tenant处于激活状态时才能对User进行认证。
+必须对密码进行加密，并且不能使用明文密码。
+只有在一个User被激活后，才能对该User进行认证
+//应用服务只用于协调服务
+UserDescriptor userDescriptor =
+               DomainRegistry.authenticationService().
+               authenticate(aTenantId,aUsername,aPassword);
+
+public class UserDescriptor implements Serializable{
+    private String emailAddress;
+    private TenantId tenantId;
+    private String username;
+    public UserDescriptor(TenantId aTenantId,String aUsername,String anEmailAddress){
+        ...
+    }
+    ...
+}
+public interface AuthenticationService{
+    public UserDescriptor authenticate(TenantId aTenantId,String aUsername,String aPassword);
+}
+
+
