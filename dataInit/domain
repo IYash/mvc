@@ -196,5 +196,78 @@ class WarbleValidator extends Validator{
 事件的名字和属性表名发生了什么样的事件。当命令操作执行完后，系统发出这些领域事件。事件的订阅方可以
 接收发生在模型上的所有事件。在接收到事件后，订阅方将事件保存在事件存储中。
 
+如何确定一个领域概念应该建模成一个之对象呢？
+当你只关心某个对象的属性时，该对象便可作为一个值对象。为其添加有意义的属性，并赋予它相应的行为。
+我们需要将值对象看成不变对象，不要给它任何身份标识，还应该尽量避免项实体对象一样的复杂性。
+
+作为一个简单例子，考虑一个标识两种成员类型的标准类型。成员类型分别为为USER和GROUP（可以嵌套），在
+java中可以使用枚举来标识该标准类型：
+public enum GroupMemberType{
+    GROUP {
+        public boolean isGroup(){
+            return true;
+        }
+    },
+    USER {
+        public boolean isUser(){
+            return true;
+        }
+    };
+    public boolean isGroup(){
+        return false;
+    }
+    public boolean isUser(){
+        return false;
+    }
+}
+一个GroupMember值对象实例在初始化时接收一个GroupMemberType标准类型。当一个User或一个
+Group被支配给了某个Group，完成指派操作的聚合应该创建正确的GroupMember：
+protected GroupMember toGroupMember(){
+    GroupMember groupMember =
+    new GroupMember(this.tenantId(),
+                    this.username(),
+                    GroupMemberType.USER);  //枚举标准类型
+    return groupMember;
+}
+
+public final class GroupMember extends IdentifiedValueObject{
+    private String name;
+    private TenantId tenantId;
+    private GroupMemberType type;
+    public GroupMember(
+       TenantId aTenantId, String aName, GroupMemberType aType
+    ){
+        this();
+        this.setName(aName);
+        this.setTenantId(aTenantId);
+        this.setType(aType);
+        this.initialize();
+    };
+    ...
+}
+GroupMember是一个值对象，聚合实体Group维护了一个GroupMember的集合。我们可以通过值对象的委派主键
+来标定某个GroupMember的实例，此时我们可以自由地将其映射成数据库实体，而同时在领域模型中将其建模
+成值对象。Group类的部分代码如下：
+public class Group extends Entity{
+    private String description;
+    private Set<GroupMember> groupMembers;
+    private String name;
+    private TenantId tenantId;
+
+    public Group(TenantId aTenantId,String aName, String aDescription){
+        this();
+        this.setDescription(aDescription);
+        this.setName(aName);
+        this.setTenantId(aTenantId);
+        this.initialize();
+    }
+    ...
+    protected Group(){
+        super();
+        this.setGroupMembers(new HashSet<GroupMember>(0));
+    }
+    ...
+}
+
 
 
