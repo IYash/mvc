@@ -106,3 +106,138 @@ public class DomainEventPublisher{
 在与远程系统交互时，客户方可以不用主动地发起请求调用，而是可以通过异步的消息来达到更高层次的
 独立性--自治性。
 
+@Aspect
+public class IdentityAccessEventProcessor{
+    ...
+    @Before("Execution(* )")
+    public void listen(){
+        DomainEventPublisher.instance().subscribe(new DomainEventSubscriber<DomainEvent>(){
+            public void handleEvent(DomainEvent aDomainEvent){
+                store(aDomainEvent);
+            }
+            public Class<DomainEvent> subscribedToEventType(){
+                return DomainEventClass;//所有领域事件
+            }
+        });
+    }
+    private void store(DomainEvent aDomainEvent){
+        EventStore.instance().append(aDomainEvent);
+    }
+}
+public class EventStore ...{
+    ...
+    public void append(DomainEvent aDomainEvent){
+        String eventSerialization = EventStore.objectSerializer().serialize(aDomain);
+        StoreEvent storeEvent = new StoreEvent(
+        aDomainEvent.getClass().getName(),
+        aDomainEvent.occurredOn(),
+        eventSerialization
+        );
+        this.session().save(storeEvent);
+        this.setStoredEvent(storeEvent);
+    }
+}
+
+public class NotificationService{
+    @Transactional(readOnly=true)
+    public NotificationLog currentNotificationLog(){
+        EventStore eventStore = EventStore.instance();
+        return this.findNotificationLog(
+            this.calculateCurrentNotificationLogId(eventStore),eventStore
+        );
+    }
+    @Transactional(readOnly=true)
+    public NotificationLog notificationLog(String aNotificationLogId){
+        EventStore eventStore = EventStore.instance();
+        return this.findNotificationLog(
+            new NotificationLogId(aNotificationLogId),eventStore
+        );
+    }
+    ...
+}
+
+可能导致消息的重复发送的场景：
+A:
+1.RabbitMQ将一条新建的消息发送到一个或多个订阅方
+2.订阅方处理该消息
+3.在订阅方发回确认信号之前，订阅方失败
+4.RabbitMQ重新发送消息
+
+B:
+1.NotificationService查找并发布3个先前未被发布的Notification实例，然后通过
+publishedMessageTracker更新发送记录
+2.RabbitMQ接收到所有3条消息，并准备将他们发送给订阅方
+3.但是，应用服务器出现故障，NotificationService出现问题，造成对PublishedMessageTracker
+的修改并未得到提交
+4.RabbitMQ将消息发送给订阅方
+5.应用服务器的故障解除，消息发布过程重新启动，NotificationService继续发送未发布的事件，其中
+也包括那3条未被PublishedMessageTracker记录的事件。
+6.RabbitMQ将所接到的事件发送给订阅方，于是先前那3条消息便出现了重复
+
+幂等操作即进行多次重复操作和只进行一次操作所产生的结果相同
+
+解决方法：
+1.处理重复消息的一种方式便是将订阅方的处理过程变成幂等操作过程
+如接收方必须自己跟踪哪些消息已经被处理过了。一种方式便是在订阅方的持久化机制中保存消息的话题/交换器名称
+和一个唯一的消息ID。然后在处理消息之前，首先对已经处理的消息进行查询。如果发现所接收到消息已经被处理过，
+那么订阅方可以简单的将其忽略掉。
+2.基于REST的时间通知时，接收方只需要保存最近处理的消息通知标识，因为此时的接收方只会处理那些发生在最近处理
+消息之后的消息。
+
+模块
+应该包含一组具有高内聚性的概念集合，以实现在不同的模块之间松耦合。
+
+聚合
+聚合模式讨论的是对象组合信息隐藏，还包含了一致性边界和事务
+原则：设计小聚合
+通过唯一标识引用其他聚合
+在边界之外使用最终一致性
+
+一次性加载大量对象以及同时访问而产生的并发竞争问题...
+
+使用迪米特法则和“告诉而非询问”原则
+任何对象的任何方法只能调用一下对象中的方法：
+(1)该对象自身(2)所传入的参数对象(3)它所创建的对象(4)自身所包含的其他对象，并且对那些对象有直接访问权
+告诉而非询问原则：
+一个对象不应该被告知如何执行操作
+public class Product extends ConcurrencySafeEntity{
+    ...
+    public void reorderFrom(BacklogItemId anId,int anOrdering){
+        for(ProductBacklogItem pbi : this.backlogItems()){
+            pbi.reorderFrom(anId,anOrdering);
+        }
+    }
+    public Set<ProductBacklogItem> backlogItems(){
+        return this.backlogItems;
+    }
+    ...
+}
+public class ProductBacklogItem extends ConcurrencySafeEntity{
+    ...
+    protected void reorderFrom(BacklogItemId anId,int anOrdering){
+        if(this.backlogItemId().equals(anId)){
+            this.setOrdering(anOrdering);
+        }else{
+            this.setOrdering(this.ordering()+1);
+        }
+    }
+    ...
+}
+
+工厂
+领域模型中的工厂
+将创建复杂对象和聚合的职责分配给一个单独的对象，该对象本身并不承担领域模型中的职责，但是依然
+是领域设计中的一部分。工厂应该提供一个创建对象的接口，该接口封装了所有创建对象的复杂操作过程
+同时，它并不需要客户去引用那个实际被创建的对象。对于聚合来说，我们应该一次性地创建整个聚合，
+并且确保它的不变条件得到满足。
+
+领域服务中的工厂
+
+资源库
+资源库通常表示一个安全的存储区域，并且对其中所存放的物品起保护作用。
+对于每种需要进行全局访问的对象，都应该创建另一个对象来作为这些对象的提供方，就像是在内存中访问
+这些对象的集合一样。为这些对象创建一个全局接口以供客户端访问。为这些对象创建添加和删除方法...此外，
+我们还应该通过能够按照某种指定条件来查询这些对象的方法...只为聚合创建资源库...
+
+
+
